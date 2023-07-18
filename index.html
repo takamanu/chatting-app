@@ -1,10 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>WebSocket</title>
+  <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    <script src="js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    <title>Chatting App</title>
 
     <style type="text/css">
-        .form {
+      .form {
             position: fixed;
             left: 0;
             bottom: 0;
@@ -31,10 +35,15 @@
             background-color: #78b8ef;
             border: 1px solid #5a9ed8;
         }
-        .container { margin-bottom: 50px; }
-        .container p { display: block; }
-
-    </style>
+        .container {
+            margin-bottom: 50px;
+            max-height: calc(100vh - 155px); /* Adjust the value based on the form height and other spacing */
+            overflow-y: auto;
+        }
+        .container p {
+            display: block;
+        }
+  </style>
 </head>
     <body>
         <div class="container"></div>
