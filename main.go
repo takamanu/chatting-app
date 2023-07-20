@@ -40,6 +40,9 @@ const MESSAGE_LEAVE = "Leave"
 var connections = make([]*WebSocketConnection, 0)
 
 func main() {
+	// Serve static files (CSS and JS) from the "static" directory
+	fs := http.FileServer(http.Dir("static"))
+	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		content, err := ioutil.ReadFile("index.html")
@@ -49,6 +52,12 @@ func main() {
 		}
 
 		fmt.Fprintf(w, "%s", content)
+	})
+
+	http.HandleFunc("/users", func(w http.ResponseWriter, r *http.Request) {
+		numUsers := len(connections)
+		log.Printf("Ada berapa users: %v", numUsers)
+		fmt.Fprintf(w, "%d", numUsers)
 	})
 
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
