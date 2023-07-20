@@ -1,6 +1,7 @@
 package main
 
 import (
+	// b64 "encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -12,13 +13,16 @@ import (
 )
 
 type SocketPayload struct {
+	Type    string
 	Message string
+	Image   string
 }
 
 type SocketResponse struct {
 	From    string
 	Type    string
 	Message string
+	Image   string
 }
 
 type WebSocketConnection struct {
@@ -30,6 +34,7 @@ type M map[string]interface{}
 
 const MESSAGE_NEW_USER = "New User"
 const MESSAGE_CHAT = "Chat"
+const MESSAGE_IMAGE = "Image"
 const MESSAGE_LEAVE = "Leave"
 
 var connections = make([]*WebSocketConnection, 0)
@@ -86,7 +91,14 @@ func handleIO(currentConn *WebSocketConnection, connections []*WebSocketConnecti
 			continue
 		}
 
-		broadcastMessage(currentConn, MESSAGE_CHAT, payload.Message)
+		switch payload.Type {
+		case MESSAGE_CHAT:
+			log.Printf("Ini basedata payload: %v", payload.Message)
+			broadcastMessage(currentConn, MESSAGE_CHAT, payload.Message)
+		case MESSAGE_IMAGE:
+			// log.Printf("Ini basedata payload: %v", payload.Image)
+			broadcastMessageImage(currentConn, MESSAGE_IMAGE, payload.Image)
+		}
 	}
 }
 
@@ -98,6 +110,7 @@ func ejectConnection(currentConn *WebSocketConnection) {
 }
 
 func broadcastMessage(currentConn *WebSocketConnection, kind, message string) {
+	// log.Printf("Ini basedata payload: %v", message)
 	for _, eachConn := range connections {
 		if eachConn == currentConn {
 			continue
@@ -107,6 +120,21 @@ func broadcastMessage(currentConn *WebSocketConnection, kind, message string) {
 			From:    currentConn.Username,
 			Type:    kind,
 			Message: message,
+		})
+	}
+}
+
+func broadcastMessageImage(currentConn *WebSocketConnection, kind, image string) {
+	// log.Printf("Ini basedata payload: %v", image)
+	for _, eachConn := range connections {
+		if eachConn == currentConn {
+			continue
+		}
+
+		eachConn.WriteJSON(SocketResponse{
+			From:  currentConn.Username,
+			Type:  kind,
+			Image: image,
 		})
 	}
 }

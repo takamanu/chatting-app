@@ -1,14 +1,22 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-  <meta charset="utf-8">
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
     <script src="js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <title>Chatting App</title>
 
     <style type="text/css">
-      .form {
+        .form .file-and-send-buttons {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .form {
             position: fixed;
             left: 0;
             bottom: 0;
@@ -17,110 +25,207 @@
             border-top: 1px solid #78b8ef;
             padding: 5px 10px;
         }
-        .form .placeholder, .form .input-message, .form button {
+
+        .form .placeholder,
+        .form .input-message,
+        .form .input-file,
+        .form button {
             display: block;
             margin-bottom: 5px;
         }
-        .form .input-message {
+
+        .form .input-message,
+        .form .input-file {
             padding: 7px;
             border: 1px solid #ecebeb;
             border-radius: 4px;
             width: -webkit-fill-available;
         }
+
         .form button {
-            width: 100%;
+            width: 49%;
             color: white;
             padding: 7px 10px;
             border-radius: 4px;
             background-color: #78b8ef;
             border: 1px solid #5a9ed8;
         }
+
+        .form .btn-picture {
+            /* Your button style here */
+            width: 20%;
+            color: white;
+            padding: 7px 10px;
+            border-radius: 4px;
+            background-color: #78b8ef;
+            border: 1px solid #5a9ed8;
+            /* Additional styles if needed */
+        }
+
+
         .container {
             margin-bottom: 50px;
-            max-height: calc(100vh - 155px); /* Adjust the value based on the form height and other spacing */
+            max-height: calc(100vh - 155px);
+            /* Adjust the value based on the form height and other spacing */
             overflow-y: auto;
         }
+
+        .image-size {
+            width: 50%;
+            height: 50%;
+        }
+
         .container p {
             display: block;
         }
-  </style>
+    </style>
 </head>
-    <body>
-        <div class="container"></div>
 
-        <div class="form">
-            <form onsubmit="app.doSendMessage(); return false;">
-                <div class="placeholder">
-                    <label>Hello <b class="username"></b>. Say something:</label>
-                </div>
-                <input class="input-message" type="text" placeholder="Enter message">
-                <button type="submit">Send</button>
-            </form>
-        </div>
+<body>
+    <div class="container"></div>
 
-        <script type="text/javascript">
-            var app = {};
-    app.ws = undefined;
-    app.container = undefined;
+    <div class="form">
+      <form onsubmit="app.sendMessage(event); return false;">
+          <div class="placeholder">
+              <label>Hello <b class="username"></b>. Say something:</label>
+          </div>
+          <input class="input-message" type="text" placeholder="Enter message" onchange="app.onFileInputChange(event)">
+          <div class="file-and-send-buttons">
+              <input class="input-file" type="file" id="fileInput" accept="image/*" style="display: none;">
+              <button type="submit">Send</button>
+              <button class="btn-picture" type="button" onclick="document.getElementById('fileInput').click()">
+                <i class="fas fa-upload"></i> Upload photos
+            </button>
+            
+          </div>
+          <label id="fileLabel">No file uploaded.</label>
+      </form>
+  </div>
 
-    app.init = function () {
-      if (!window.WebSocket) {
-        alert('Your browser does not support WebSocket');
-        return;
-      }
+    <script type="text/javascript">
+        var app = {};
+        app.ws = undefined;
+        app.container = undefined;
+        app.showFileName = undefined;
 
-      var name = prompt('Enter your name please:') || "No name";
-      document.querySelector('.username').innerText = name;
+        app.init = function() {
+            if (!window.WebSocket) {
+                alert('Your browser does not support WebSocket');
+                return;
+            }
 
-      app.container = document.querySelector('.container');
+            var name = prompt('Enter your name please:') || "No name";
+            document.querySelector('.username').innerText = name;
 
-      app.ws = new WebSocket("ws://localhost:8080/ws?username=" + name);
+            app.container = document.querySelector('.container');
 
-      app.ws.onopen = function () {
-        var message = '<b>me</b>: connected';
-        app.print(message);
-      };
+            app.ws = new WebSocket("ws://localhost:8080/ws?username=" + name);
 
-      app.ws.onmessage = function (event) {
-        var res = JSON.parse(event.data);
+            app.ws.onopen = function() {
+                var message = '<b>me</b>: connected';
+                app.print(message);
+            };
 
-        var message = '';
-        if (res.Type === 'New User') {
-          message = 'User <b>' + res.From + '</b>: connected';
-        } else if (res.Type === 'Leave') {
-          message = 'User <b>' + res.From + '</b>: disconnected';
-        } else {
-          message = '<b>' + res.From + '</b>: ' + res.Message;
-        }
+            app.ws.onmessage = function(event) {
+                var res = JSON.parse(event.data);
 
-        app.print(message);
-      };
+                var message = '';
+                if (res.Type === 'New User') {
+                    message = 'User <b>' + res.From + '</b>: connected';
+                } else if (res.Type === 'Leave') {
+                    message = 'User <b>' + res.From + '</b>: disconnected';
+                } else if (res.Type === 'Image') {
+                    message = '<b>' + res.From + '</b>: <img src="data:image/png;base64,' + res.Image +
+                        '" class="image-size">';
+                } else {
+                    message = '<b>' + res.From + '</b>: ' + res.Message;
+                }
 
-      app.ws.onclose = function () {
-        var message = '<b>me</b>: disconnected';
-        app.print(message);
-      };
-    };
+                app.print(message);
+            };
 
-    app.print = function (message) {
-      var el = document.createElement("p");
-      el.innerHTML = message;
-      app.container.append(el);
-    };
+            app.ws.onclose = function() {
+                var message = '<b>me</b>: disconnected';
+                app.print(message);
+            };
+        };
 
-    app.doSendMessage = function () {
-      var messageRaw = document.querySelector('.input-message').value;
-      app.ws.send(JSON.stringify({
-        Message: messageRaw
-      }));
+        app.print = function(message) {
+            var el = document.createElement("p");
+            el.innerHTML = message;
+            app.container.append(el);
+            console.log(message);
+        };
 
-      var message = '<b>me</b>: ' + messageRaw;
-      app.print(message);
+        app.sendMessage = function(event) {
+            event.preventDefault();
 
-      document.querySelector('.input-message').value = '';
-    };
+            var inputMessage = document.querySelector('.input-message');
+            var inputFile = document.querySelector('.input-file');
+            var fileLabel = document.getElementById('fileLabel');
 
-    window.onload = app.init;
-        </script>
-    </body>
+            if (inputMessage.value !== '') {
+                app.ws.send(JSON.stringify({
+                    Type: 'Chat',
+                    Message: inputMessage.value
+                }));
+
+                var message = '<b>me</b>: ' + inputMessage.value;
+                app.print(message);
+
+                inputMessage.value = '';
+            }
+
+            if (inputFile.files.length > 0) {
+                var file = inputFile.files[0];
+
+                var reader = new FileReader();
+
+                fileLabel.innerText = 'Uploaded: ' + file.name;
+                reader.onload = function(event) {
+                    const base64Data = event.target.result.split(',')[
+                        1]; // Extract the base64-encoded data from the Data URL
+                    console.log("Masuk ga ya: ", base64Data);
+
+                    // Send only the base64-encoded data without the data URI header
+                    app.ws.send(JSON.stringify({
+                        Type: 'Image',
+                        Image: base64Data,
+                    }));
+
+                    const message = '<b>me</b>: <img src="' + event.target.result + '" class="image-size">';
+                    app.print(message);
+                };
+                reader.readAsDataURL(file);
+
+                inputFile.value = ''; // Clear the selected file from the input field
+            }
+        };
+
+        // app.showFileName = function() {
+        //     var inputFile = document.querySelector('.input-file');
+        //     var fileLabel = document.getElementById('fileLabel');
+
+        //     if (inputFile.files.length > 0) {
+        //         var file = inputFile.files[0];
+
+        //         fileLabel.innerText = 'Uploaded: ' + file.name;
+        //     }
+
+        // };
+
+        app.onFileInputChange = function (event) {
+          event.preventDefault()
+            const file = inputElement.files[0];
+            if (!file) return;
+
+            // Display the file name in the label
+            const fileLabel = document.getElementById('fileLabel');
+            fileLabel.innerText = 'Selected file: ' + file.name;
+          };
+
+        window.onload = app.init;
+    </script>
+</body>
+
 </html>
