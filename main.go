@@ -2,14 +2,15 @@ package main
 
 import (
 	// b64 "encoding/base64"
+	_ "chapter-d3/view/statik"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
 
 	"github.com/gorilla/websocket"
 	gubrak "github.com/novalagung/gubrak/v2"
+	"github.com/rakyll/statik/fs"
 )
 
 type SocketPayload struct {
@@ -41,18 +42,27 @@ var connections = make([]*WebSocketConnection, 0)
 
 func main() {
 	// Serve static files (CSS and JS) from the "static" directory
-	fs := http.FileServer(http.Dir("static"))
-	http.Handle("/static/", http.StripPrefix("/static/", fs))
+	// fs := http.FileServer(http.Dir("static"))
+	// http.Handle("/static/", http.StripPrefix("/static/", fs))
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		content, err := ioutil.ReadFile("index.html")
-		if err != nil {
-			http.Error(w, "Could not open requested file", http.StatusInternalServerError)
-			return
-		}
+	// http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	// 	content, err := ioutil.ReadFile("index.html")
+	// 	if err != nil {
+	// 		http.Error(w, "Could not open requested file", http.StatusInternalServerError)
+	// 		return
+	// 	}
 
-		fmt.Fprintf(w, "%s", content)
-	})
+	// 	fmt.Fprintf(w, "%s", content)
+	// })
+
+	statikFS, err := fs.New()
+	if err != nil {
+		log.Fatal("Cannot Create Statik File: ", err)
+	}
+
+	statikHandler := http.StripPrefix("/", http.FileServer(statikFS))
+
+	http.Handle("/", statikHandler)
 
 	http.HandleFunc("/users", func(w http.ResponseWriter, r *http.Request) {
 		numUsers := len(connections)
